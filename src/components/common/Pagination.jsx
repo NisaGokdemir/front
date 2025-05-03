@@ -13,27 +13,52 @@ import {
   KeyboardArrowRight as KeyboardArrowRightIcon
 } from '@mui/icons-material';
 
-const Pagination = ({ page, totalPages, totalElements, size, onPageChange, onSizeChange }) => {
+/**
+ * Özelleştirilmiş Sayfalama Bileşeni
+ * 
+ * @param {Object} props
+ * @param {number} props.page - Mevcut sayfa numarası (0-tabanlı)
+ * @param {number} props.totalPages - Toplam sayfa sayısı
+ * @param {number} props.totalElements - Toplam öğe sayısı
+ * @param {Function} props.onPageChange - Sayfa değiştiğinde çağrılacak fonksiyon
+ * @param {number} props.pageSize - Sayfa başına öğe sayısı
+ * @param {Function} props.onPageSizeChange - Sayfa boyutu değiştiğinde çağrılacak fonksiyon
+ * @param {Array} props.pageSizeOptions - Sayfa boyutu seçenekleri
+ */
+const Pagination = ({ 
+  page = 0, 
+  totalPages = 0, 
+  totalElements = 0, 
+  onPageChange,
+  pageSize = 10,
+  onPageSizeChange,
+  pageSizeOptions = [5, 10, 25, 50, 100]
+}) => {
   const theme = useTheme();
   
   if (totalElements === 0) {
     return null;
   }
 
-  const handleSizeChange = (event) => {
-    if (onSizeChange) {
-      onSizeChange(event);
-    }
+  const handleChange = (event, value) => {
+    onPageChange(value - 1);
   };
 
-  const startItem = page * size + 1;
-  const endItem = Math.min((page + 1) * size, totalElements);
+  const handlePageSizeChange = (event) => {
+    const newSize = event.target.value;
+    onPageSizeChange(newSize);
+  };
+
+  const startItem = totalElements > 0 ? page * pageSize + 1 : 0;
+  const endItem = Math.min((page + 1) * pageSize, totalElements);
+  const pageInfoText = `${startItem}-${endItem} / ${totalElements}`;
 
   return (
     <Box sx={{ 
+      mt: 4, 
       display: 'flex', 
-      alignItems: 'center', 
-      justifyContent: 'space-between',
+      justifyContent: 'space-between', 
+      alignItems: 'center',
       flexWrap: 'wrap',
       gap: 2,
       width: '100%',
@@ -43,53 +68,46 @@ const Pagination = ({ page, totalPages, totalElements, size, onPageChange, onSiz
     }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
         <Typography variant="body2" color="text.secondary">
-          Gösterim:
+          Gösterilen: {pageInfoText}
         </Typography>
-        <FormControl size="small" sx={{ minWidth: 80 }}>
+        
+        <FormControl variant="outlined" size="small" sx={{ minWidth: 80 }}>
           <Select
-            value={size}
-            onChange={handleSizeChange}
-            displayEmpty
+            value={pageSize}
+            onChange={handlePageSizeChange}
             sx={{ 
-              '& .MuiOutlinedInput-input': { py: 0.8 },
-              '& .MuiOutlinedInput-root': { borderRadius: 2 }
+              '& .MuiSelect-select': { 
+                py: 0.5, 
+                fontSize: '0.875rem' 
+              },
+              borderRadius: '8px'
             }}
           >
-            <MenuItem value={5}>5</MenuItem>
-            <MenuItem value={10}>10</MenuItem>
-            <MenuItem value={20}>20</MenuItem>
-            <MenuItem value={50}>50</MenuItem>
+            {pageSizeOptions.map(option => (
+              <MenuItem key={option} value={option}>
+                {option}
+              </MenuItem>
+            ))}
           </Select>
         </FormControl>
       </Box>
       
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-        <MuiPagination
-          count={totalPages}
-          page={page + 1}
-          onChange={(event, value) => onPageChange(event, value - 1)}
-          shape="rounded"
-          color="primary"
-          size="medium"
-          siblingCount={1}
-          boundaryCount={1}
-          renderItem={(item) => (
-            <PaginationItem
-              slots={{ previous: KeyboardArrowLeftIcon, next: KeyboardArrowRightIcon }}
-              {...item}
-              sx={{ 
-                borderRadius: '8px',
-                '&.Mui-selected': {
-                  fontWeight: 'bold'
-                }
-              }}
-            />
-          )}
-        />
-        <Typography variant="body2" color="text.secondary">
-          {startItem}-{endItem} / {totalElements}
-        </Typography>
-      </Box>
+      <MuiPagination
+        count={totalPages}
+        page={page + 1}
+        onChange={handleChange}
+        color="primary"
+        shape="rounded"
+        showFirstButton
+        showLastButton
+        siblingCount={1}
+        size="medium"
+        sx={{
+          '& .MuiPaginationItem-root': {
+            borderRadius: '8px', 
+          }
+        }}
+      />
     </Box>
   );
 };

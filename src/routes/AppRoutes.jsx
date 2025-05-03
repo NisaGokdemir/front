@@ -18,6 +18,8 @@ import MedicationPage from '../pages/MedicationPage';
 import MedicationBatchPage from '../pages/MedicationBatchPage';
 import PrescriptionPage from '../pages/PrescriptionPage';
 import PrescriptionItemPage from '../pages/PrescriptionItemPage';
+import DiseasePage from '../pages/DiseasePage';
+import ClinicPage from '../pages/ClinicPage';
 
 const AppRoutes = () => {
   return (
@@ -67,6 +69,14 @@ const AppRoutes = () => {
               </Layout>
             }
           />
+          <Route
+            path="/clinics"
+            element={
+              <Layout>
+                <ClinicPage />
+              </Layout>
+            }
+          />
         </Route>
         
         {/* Veterinarian, Admin Routes */}
@@ -106,6 +116,14 @@ const AppRoutes = () => {
             element={
               <Layout>
                 <BreedPage />
+              </Layout>
+            }
+          />
+          <Route
+            path="/diseases"
+            element={
+              <Layout>
+                <DiseasePage />
               </Layout>
             }
           />

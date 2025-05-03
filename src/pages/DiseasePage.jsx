@@ -24,31 +24,30 @@ import {
 } from '@mui/material';
 import { 
   Add as AddIcon,
-  Vaccines as VaccineIcon,
+  Coronavirus as DiseaseIcon,
   Search as SearchIcon,
   FilterList as FilterIcon,
+  Category as CategoryIcon,
   Pets as PetsIcon,
   Sort as SortIcon,
   ArrowUpward as ArrowUpIcon,
-  ArrowDownward as ArrowDownIcon,
-  Factory as ManufacturerIcon
+  ArrowDownward as ArrowDownIcon
 } from '@mui/icons-material';
-import vaccineService from '../services/vaccineService';
-import VaccineList from '../components/vaccines/VaccineList';
-import VaccineForm from '../components/vaccines/VaccineForm';
+import diseaseService from '../services/diseaseService';
+import DiseaseList from '../components/diseases/DiseaseList';
+import DiseaseForm from '../components/diseases/DiseaseForm';
 import Pagination from '../components/common/Pagination';
 import SearchBar from '../components/common/SearchBar';
-import { speciesService } from '../services/apiService';
 
 /**
- * Aşı (Vaccine) yönetim sayfası
- * Aşıları listeleme, arama, filtreleme, ekleme, düzenleme ve silme işlemlerini sağlar
+ * Hastalık (Disease) yönetim sayfası
+ * Hastalıkları listeleme, arama, filtreleme, ekleme, düzenleme ve silme işlemlerini sağlar
  */
-const VaccinePage = () => {
+const DiseasePage = () => {
   const theme = useTheme();
   
   // Veri durum state'leri
-  const [vaccines, setVaccines] = useState([]);
+  const [diseases, setDiseases] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
@@ -62,111 +61,114 @@ const VaccinePage = () => {
   // Dialog state'leri
   const [openDialog, setOpenDialog] = useState(false);
   const [dialogMode, setDialogMode] = useState('add'); // 'add' veya 'edit'
-  const [selectedVaccine, setSelectedVaccine] = useState(null);
+  const [selectedDisease, setSelectedDisease] = useState(null);
   
   // Arama ve filtreleme state'leri
   const [searchTerm, setSearchTerm] = useState('');
-  const [filteredVaccines, setFilteredVaccines] = useState([]);
-  const [speciesFilter, setSpeciesFilter] = useState(null);
-  const [manufacturerFilter, setManufacturerFilter] = useState(null);
+  const [filteredDiseases, setFilteredDiseases] = useState([]);
+  const [categoryFilter, setCategoryFilter] = useState(null);
+  const [animalTypeFilter, setAnimalTypeFilter] = useState(null);
   
   // Sıralama state'leri
   const [sortAnchorEl, setSortAnchorEl] = useState(null);
   const [sortField, setSortField] = useState('name');
   const [sortDirection, setSortDirection] = useState('asc');
 
-  // Hayvan türleri ve üretici firmalar listesi
-  const [speciesList, setSpeciesList] = useState([]);
-  const [manufacturerList, setManufacturerList] = useState([]);
+  // Kategori ve hayvan türü seçenekleri
+  const categoryOptions = [
+    'Enfeksiyon',
+    'Paraziter',
+    'Genetik',
+    'Metabolik',
+    'Ortopedik',
+    'Kardiyovasküler',
+    'Solunum',
+    'Sindirim',
+    'Nörolojik',
+    'Dermatolojik',
+    'Göz',
+    'Diş',
+    'Üriner',
+    'Onkoloji',
+    'Davranışsal',
+    'Diğer'
+  ];
+
+  const animalTypeOptions = [
+    'Kedi',
+    'Köpek',
+    'Kuş',
+    'Kemirgen',
+    'Tavşan',
+    'At',
+    'İnek',
+    'Koyun',
+    'Keçi',
+    'Kümes Hayvanları',
+    'Balık',
+    'Egzotik Hayvanlar',
+    'Sürüngenler'
+  ];
 
   /**
-   * Aşıları API'den yükler
+   * Hastalıkları API'den yükler
    */
-  const fetchVaccines = useCallback(async () => {
+  const fetchDiseases = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       
-      const response = await vaccineService.getVaccines(page, size);
+      const response = await diseaseService.getAllDiseases();
       
       // API yanıtı bir array ya da bir Page objesi olabilir
       if (Array.isArray(response)) {
-        setVaccines(response);
+        setDiseases(response);
         setTotalElements(response.length);
         setTotalPages(1);
       } else {
-        setVaccines(response.content || []);
+        setDiseases(response.content || []);
         setTotalElements(response.totalElements || response.length || 0);
         setTotalPages(response.totalPages || 1);
       }
       
-      // Üretici firmaları çıkar
-      const manufacturers = [...new Set(
-        (Array.isArray(response) ? response : response.content || [])
-          .map(v => v.manufacturer)
-          .filter(Boolean)
-      )];
-      
-      setManufacturerList(manufacturers);
-      
     } catch (error) {
-      console.error('Aşılar yüklenirken hata oluştu:', error);
-      setError(error.message || 'Aşılar yüklenemedi');
+      console.error('Hastalıklar yüklenirken hata oluştu:', error);
+      setError(error.message || 'Hastalıklar yüklenemedi');
     } finally {
       setLoading(false);
     }
-  }, [page, size]);
-
-  // Hayvan türlerini getir
-  useEffect(() => {
-    const fetchSpecies = async () => {
-      try {
-        const response = await speciesService.getAll(0, 100);
-        const species = Array.isArray(response) 
-          ? response 
-          : response.content || [];
-          
-        setSpeciesList(species.map(s => s.name || '').filter(Boolean));
-      } catch (error) {
-        console.error('Tür verileri yüklenirken hata oluştu:', error);
-      }
-    };
-    
-    fetchSpecies();
   }, []);
 
-  // Sayfa yüklendiğinde aşıları yükle
+  // Sayfa yüklendiğinde hastalıkları yükle
   useEffect(() => {
-    fetchVaccines();
-  }, [fetchVaccines]);
+    fetchDiseases();
+  }, [fetchDiseases]);
 
   // Filtreleme işlemi
   useEffect(() => {
-    if (!vaccines.length) return;
+    if (!diseases.length) return;
     
-    let result = [...vaccines];
+    let result = [...diseases];
     
     // Arama filtresi uygula
     if (searchTerm) {
       const lowerSearchTerm = searchTerm.toLowerCase();
-      result = result.filter(vaccine => 
-        vaccine.name.toLowerCase().includes(lowerSearchTerm) ||
-        (vaccine.manufacturer && vaccine.manufacturer.toLowerCase().includes(lowerSearchTerm)) ||
-        (vaccine.description && vaccine.description.toLowerCase().includes(lowerSearchTerm))
+      result = result.filter(disease => 
+        disease.name.toLowerCase().includes(lowerSearchTerm) ||
+        (disease.description && disease.description.toLowerCase().includes(lowerSearchTerm)) ||
+        (disease.symptoms && disease.symptoms.toLowerCase().includes(lowerSearchTerm))
       );
     }
     
-    // Tür filtresi uygula
-    if (speciesFilter) {
-      result = result.filter(vaccine => 
-        vaccine.targetSpecies && vaccine.targetSpecies.toLowerCase().includes(speciesFilter.toLowerCase())
-      );
+    // Kategori filtresi uygula
+    if (categoryFilter) {
+      result = result.filter(disease => disease.category === categoryFilter);
     }
     
-    // Üretici filtresi uygula
-    if (manufacturerFilter) {
-      result = result.filter(vaccine => 
-        vaccine.manufacturer === manufacturerFilter
+    // Hayvan türü filtresi uygula
+    if (animalTypeFilter) {
+      result = result.filter(disease => 
+        disease.animalTypes && disease.animalTypes.toLowerCase().includes(animalTypeFilter.toLowerCase())
       );
     }
     
@@ -185,18 +187,18 @@ const VaccinePage = () => {
       }
     });
     
-    setFilteredVaccines(result);
-  }, [vaccines, searchTerm, speciesFilter, manufacturerFilter, sortField, sortDirection]);
+    setFilteredDiseases(result);
+  }, [diseases, searchTerm, categoryFilter, animalTypeFilter, sortField, sortDirection]);
 
   /**
    * Dialog'u açar (ekleme veya düzenleme modu)
    * 
    * @param {string} mode - Dialog modu ('add' veya 'edit')
-   * @param {Object} vaccine - Düzenlenecek aşı (edit modunda)
+   * @param {Object} disease - Düzenlenecek hastalık (edit modunda)
    */
-  const handleDialogOpen = (mode, vaccine = null) => {
+  const handleDialogOpen = (mode, disease = null) => {
     setDialogMode(mode);
-    setSelectedVaccine(vaccine);
+    setSelectedDisease(disease);
     setOpenDialog(true);
   };
 
@@ -205,7 +207,7 @@ const VaccinePage = () => {
    */
   const handleDialogClose = () => {
     setOpenDialog(false);
-    setSelectedVaccine(null);
+    setSelectedDisease(null);
   };
 
   /**
@@ -218,21 +220,21 @@ const VaccinePage = () => {
   };
 
   /**
-   * Tür filtresini değiştirir
+   * Kategori filtresini değiştirir
    * 
-   * @param {string|null} species - Tür adı veya null
+   * @param {string|null} category - Kategori adı veya null
    */
-  const handleSpeciesFilter = (species) => {
-    setSpeciesFilter(speciesFilter === species ? null : species);
+  const handleCategoryFilter = (category) => {
+    setCategoryFilter(categoryFilter === category ? null : category);
   };
 
   /**
-   * Üretici filtresini değiştirir
+   * Hayvan türü filtresini değiştirir
    * 
-   * @param {string|null} manufacturer - Üretici firma adı veya null
+   * @param {string|null} animalType - Hayvan türü veya null
    */
-  const handleManufacturerFilter = (manufacturer) => {
-    setManufacturerFilter(manufacturerFilter === manufacturer ? null : manufacturer);
+  const handleAnimalTypeFilter = (animalType) => {
+    setAnimalTypeFilter(animalTypeFilter === animalType ? null : animalType);
   };
 
   /**
@@ -267,51 +269,32 @@ const VaccinePage = () => {
   };
 
   /**
-   * Sayfalama değişimini yönetir
-   * 
-   * @param {number} newPage - Yeni sayfa indeksi
-   */
-  const handlePageChange = (newPage) => {
-    setPage(newPage);
-  };
-
-  /**
-   * Sayfa boyutu değişimini yönetir
-   * 
-   * @param {number} newSize - Yeni sayfa boyutu
-   */
-  const handlePageSizeChange = (newSize) => {
-    setSize(newSize);
-    setPage(0); // İlk sayfaya dön
-  };
-
-  /**
    * Form gönderimini yönetir (ekleme veya düzenleme)
    * 
-   * @param {Object} vaccineData - Form verileri
+   * @param {Object} diseaseData - Form verileri
    */
-  const handleFormSubmit = async (vaccineData) => {
+  const handleFormSubmit = async (diseaseData) => {
     try {
       setLoading(true);
       
       if (dialogMode === 'add') {
-        await vaccineService.createVaccine(vaccineData);
+        await diseaseService.createDisease(diseaseData);
         setNotification({
           open: true,
-          message: 'Aşı başarıyla eklendi',
+          message: 'Hastalık başarıyla eklendi',
           severity: 'success'
         });
       } else {
-        await vaccineService.updateVaccine(selectedVaccine.id, vaccineData);
+        await diseaseService.updateDisease(selectedDisease.id, diseaseData);
         setNotification({
           open: true,
-          message: 'Aşı başarıyla güncellendi',
+          message: 'Hastalık başarıyla güncellendi',
           severity: 'success'
         });
       }
       
       handleDialogClose();
-      fetchVaccines(); // Listeyi yenile
+      fetchDiseases(); // Listeyi yenile
     } catch (error) {
       console.error('İşlem sırasında hata oluştu:', error);
       setNotification({
@@ -325,23 +308,23 @@ const VaccinePage = () => {
   };
 
   /**
-   * Aşı silme işlemini yönetir
+   * Hastalık silme işlemini yönetir
    * 
-   * @param {number} id - Silinecek aşı ID'si
+   * @param {number} id - Silinecek hastalık ID'si
    */
-  const handleDeleteVaccine = async (id) => {
+  const handleDeleteDisease = async (id) => {
     try {
       setLoading(true);
       
-      await vaccineService.deleteVaccine(id);
+      await diseaseService.deleteDisease(id);
       
       setNotification({
         open: true,
-        message: 'Aşı başarıyla silindi',
+        message: 'Hastalık başarıyla silindi',
         severity: 'success'
       });
       
-      fetchVaccines(); // Listeyi yenile
+      fetchDiseases(); // Listeyi yenile
     } catch (error) {
       console.error('Silme işlemi sırasında hata oluştu:', error);
       setNotification({
@@ -362,10 +345,50 @@ const VaccinePage = () => {
   };
 
   /**
-   * Tür filtre çiplerini render eder
+   * Filtre çiplerini render eder
    */
-  const renderSpeciesChips = () => (
+  const renderFilterChips = () => (
     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+      <Box sx={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)', 
+        px: 1.5, 
+        py: 0.75, 
+        borderRadius: '16px'
+      }}>
+        <CategoryIcon fontSize="small" color="primary" sx={{ mr: 1 }} />
+        <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
+          Kategori:
+        </Typography>
+      </Box>
+      
+      <Chip
+        label="Tümü"
+        color="primary"
+        variant={!categoryFilter ? 'filled' : 'outlined'}
+        onClick={() => handleCategoryFilter(null)}
+        sx={{ borderRadius: '16px' }}
+      />
+      
+      {categoryOptions.map(category => (
+        <Chip
+          key={category}
+          label={category}
+          color="primary"
+          variant={categoryFilter === category ? 'filled' : 'outlined'}
+          onClick={() => handleCategoryFilter(category)}
+          sx={{ borderRadius: '16px' }}
+        />
+      ))}
+    </Box>
+  );
+
+  /**
+   * Hayvan türü filtre çiplerini render eder
+   */
+  const renderAnimalTypeChips = () => (
+    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 3 }}>
       <Box sx={{ 
         display: 'flex', 
         alignItems: 'center', 
@@ -376,65 +399,25 @@ const VaccinePage = () => {
       }}>
         <PetsIcon fontSize="small" color="primary" sx={{ mr: 1 }} />
         <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
-          Tür:
+          Hayvan Türü:
         </Typography>
       </Box>
       
       <Chip
         label="Tümü"
         color="primary"
-        variant={!speciesFilter ? 'filled' : 'outlined'}
-        onClick={() => handleSpeciesFilter(null)}
+        variant={!animalTypeFilter ? 'filled' : 'outlined'}
+        onClick={() => handleAnimalTypeFilter(null)}
         sx={{ borderRadius: '16px' }}
       />
       
-      {speciesList.map(species => (
+      {animalTypeOptions.map(type => (
         <Chip
-          key={species}
-          label={species}
+          key={type}
+          label={type}
           color="primary"
-          variant={speciesFilter === species ? 'filled' : 'outlined'}
-          onClick={() => handleSpeciesFilter(species)}
-          sx={{ borderRadius: '16px' }}
-        />
-      ))}
-    </Box>
-  );
-
-  /**
-   * Üretici filtre çiplerini render eder
-   */
-  const renderManufacturerChips = () => (
-    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 3 }}>
-      <Box sx={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)', 
-        px: 1.5, 
-        py: 0.75, 
-        borderRadius: '16px'
-      }}>
-        <ManufacturerIcon fontSize="small" color="primary" sx={{ mr: 1 }} />
-        <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
-          Üretici:
-        </Typography>
-      </Box>
-      
-      <Chip
-        label="Tümü"
-        color="primary"
-        variant={!manufacturerFilter ? 'filled' : 'outlined'}
-        onClick={() => handleManufacturerFilter(null)}
-        sx={{ borderRadius: '16px' }}
-      />
-      
-      {manufacturerList.map(manufacturer => (
-        <Chip
-          key={manufacturer}
-          label={manufacturer}
-          color="primary"
-          variant={manufacturerFilter === manufacturer ? 'filled' : 'outlined'}
-          onClick={() => handleManufacturerFilter(manufacturer)}
+          variant={animalTypeFilter === type ? 'filled' : 'outlined'}
+          onClick={() => handleAnimalTypeFilter(type)}
           sx={{ borderRadius: '16px' }}
         />
       ))}
@@ -458,7 +441,7 @@ const VaccinePage = () => {
             display: 'flex',
             alignItems: 'center',
             gap: 2,
-            background: 'linear-gradient(90deg, #3f51b5 0%, #5d6cc6 100%)',
+            background: 'linear-gradient(90deg, #d32f2f 0%, #f44336 100%)',
             py: 5,
             px: 6
           }}
@@ -484,15 +467,15 @@ const VaccinePage = () => {
               zIndex: 1
             }}
           >
-            <VaccineIcon fontSize="large" sx={{ color: 'white' }} />
+            <DiseaseIcon fontSize="large" sx={{ color: 'white' }} />
           </Box>
           
           <Box sx={{ zIndex: 1 }}>
             <Typography variant="h4" component="h1" sx={{ fontWeight: 500, color: 'white' }}>
-              Aşı Yönetimi
+              Hastalık Yönetimi
             </Typography>
             <Typography variant="subtitle2" sx={{ color: 'rgba(255,255,255,0.8)' }}>
-              Sistem içindeki aşı kayıtlarını yönetin
+              Sistem içindeki hastalık kayıtlarını yönetin
             </Typography>
           </Box>
         </Box>
@@ -504,7 +487,7 @@ const VaccinePage = () => {
             <Grid item xs={12} md={8}>
               <TextField
                 fullWidth
-                placeholder="Aşı adı, üretici veya açıklamada ara..."
+                placeholder="Hastalık adı, açıklama veya belirtilerde ara..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 InputProps={{
@@ -531,7 +514,7 @@ const VaccinePage = () => {
                 }}
               >
                 {sortField === 'name' ? 'İsme Göre' : 
-                 sortField === 'manufacturer' ? 'Üreticiye Göre' : 'Tarih'}
+                 sortField === 'category' ? 'Kategoriye Göre' : 'Tarih'}
               </Button>
               
               <Button
@@ -544,10 +527,10 @@ const VaccinePage = () => {
                   borderRadius: '8px',
                   px: 3,
                   py: 1.2,
-                  boxShadow: '0 4px 10px rgba(63, 81, 181, 0.25)'
+                  boxShadow: '0 4px 10px rgba(211, 47, 47, 0.25)'
                 }}
               >
-                Yeni Aşı Ekle
+                Yeni Hastalık Ekle
               </Button>
               
               <Menu
@@ -572,25 +555,25 @@ const VaccinePage = () => {
                   </ListItemIcon>
                   <ListItemText>İsme Göre</ListItemText>
                 </MenuItem>
-                <MenuItem onClick={() => handleSortBy('manufacturer')}>
+                <MenuItem onClick={() => handleSortBy('category')}>
                   <ListItemIcon>
-                    {sortField === 'manufacturer' && (
+                    {sortField === 'category' && (
                       sortDirection === 'asc' ? <ArrowUpIcon fontSize="small" /> : <ArrowDownIcon fontSize="small" />
                     )}
                   </ListItemIcon>
-                  <ListItemText>Üreticiye Göre</ListItemText>
+                  <ListItemText>Kategoriye Göre</ListItemText>
                 </MenuItem>
               </Menu>
             </Grid>
           </Grid>
           
-          {/* Tür Filtreleri */}
-          {renderSpeciesChips()}
+          {/* Kategori Filtreleri */}
+          {renderFilterChips()}
           
-          {/* Üretici Filtreleri */}
-          {renderManufacturerChips()}
+          {/* Hayvan Türü Filtreleri */}
+          {renderAnimalTypeChips()}
           
-          {/* Aşı Listesi */}
+          {/* Hastalık Listesi */}
           <Paper 
             elevation={0} 
             sx={{ 
@@ -617,23 +600,13 @@ const VaccinePage = () => {
               </Box>
             )}
             
-            <VaccineList 
-              vaccines={filteredVaccines} 
-              onEdit={(vaccine) => handleDialogOpen('edit', vaccine)}
-              onDelete={handleDeleteVaccine}
+            <DiseaseList 
+              diseases={filteredDiseases} 
+              onEdit={(disease) => handleDialogOpen('edit', disease)}
+              onDelete={handleDeleteDisease}
               loading={loading}
             />
           </Paper>
-          
-          {/* Sayfalama */}
-          <Pagination 
-            page={page}
-            totalPages={totalPages}
-            totalElements={totalElements}
-            onPageChange={handlePageChange}
-            pageSize={size}
-            onPageSizeChange={handlePageSizeChange}
-          />
         </CardContent>
       </Card>
       
@@ -650,9 +623,9 @@ const VaccinePage = () => {
           }
         }}
       >
-        <VaccineForm
+        <DiseaseForm
           mode={dialogMode}
-          initialData={selectedVaccine}
+          initialData={selectedDisease}
           onSubmit={handleFormSubmit}
           onCancel={handleDialogClose}
           loading={loading}
@@ -679,4 +652,4 @@ const VaccinePage = () => {
   );
 };
 
-export default VaccinePage; 
+export default DiseasePage; 

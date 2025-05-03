@@ -32,7 +32,9 @@ import {
   Medication as MedicineIcon,
   Animation as SpeciesIcon,
   AccountTree as FamilyIcon,
-  Pets as BreedIcon
+  Pets as BreedIcon,
+  Coronavirus as DiseaseIcon,
+  Business as ClinicIcon
 } from '@mui/icons-material';
 
 const navItems = [
@@ -73,6 +75,12 @@ const navItems = [
     roles: ['ROLE_ADMIN', 'ROLE_VETERINARIAN', 'ROLE_RECEPTIONIST'] 
   },
   { 
+    title: 'Hastalık', 
+    icon: <DiseaseIcon color="error" />, 
+    path: '/diseases', 
+    roles: ['ROLE_ADMIN', 'ROLE_VETERINARIAN'] 
+  },
+  { 
     title: 'Aşı', 
     icon: <VaccineIcon />, 
     path: '/vaccines', 
@@ -107,6 +115,12 @@ const navItems = [
     icon: <MedicineIcon />, 
     path: '/prescription-items', 
     roles: ['ROLE_ADMIN', 'ROLE_VETERINARIAN'] 
+  },
+  { 
+    title: 'Klinik', 
+    icon: <ClinicIcon color="primary" />, 
+    path: '/clinics', 
+    roles: ['ROLE_ADMIN', 'ROLE_VETERINARIAN', 'ROLE_RECEPTIONIST'] 
   },
 ];
 
